@@ -1,0 +1,73 @@
+package utils
+
+import (
+	"strconv"
+	"strings"
+)
+
+func StringToInt(s string) (int, error) {
+	i64, err := strconv.ParseInt(strings.Trim(s, " "), 10, 32)
+	return int(i64), err
+}
+
+func StringToFloat64(s string) (float64, error) {
+	f64, err := strconv.ParseFloat(strings.Trim(s, " "), 64)
+	return f64, err
+}
+func StringToFloat32(s string) (float32, error) {
+	f64, err := strconv.ParseFloat(strings.Trim(s, " "), 32)
+	return float32(f64), err
+}
+func StringToFloat64Array(s string) ([]float64, error) {
+	s = strings.Replace(s, ", ", ",", -1)
+	s = strings.Trim(s, " ")
+	arrStr := strings.Split(s, ",")
+	var arrFloat []float64
+	for _, s := range arrStr {
+		f64, err := strconv.ParseFloat(strings.Trim(s, " "), 64)
+		if err != nil {
+			return nil, err
+		}
+		arrFloat = append(arrFloat, f64)
+	}
+	return arrFloat, nil
+}
+func StringToFloat32Array(s string) ([]float32, error) {
+	s = strings.Replace(s, ", ", ",", -1)
+	s = strings.Trim(s, " ")
+	arrStr := strings.Split(s, ",")
+	var arrFloat []float32
+	for _, s := range arrStr {
+		f64, err := strconv.ParseFloat(strings.Trim(s, " "), 32)
+		if err != nil {
+			return nil, err
+		}
+		arrFloat = append(arrFloat, float32(f64))
+	}
+	return arrFloat, nil
+}
+
+func StringToBool(s string) (bool, error) {
+	return strconv.ParseBool(s)
+}
+
+func StringToStringArray(s string) []string {
+	s = strings.Replace(s, ", ", ",", -1)
+	s = strings.Trim(s, " ")
+	return strings.Split(s, ",")
+}
+
+func StringToIntArray(s string) ([]int, error) {
+	s = strings.Replace(s, ", ", ",", -1)
+	s = strings.Trim(s, " ")
+	arrStr := strings.Split(s, ",")
+	var arrInt []int
+	for _, s := range arrStr {
+		i64, err := strconv.ParseInt(strings.Trim(s, " "), 10, 32)
+		if err != nil {
+			return nil, err
+		}
+		arrInt = append(arrInt, int(i64))
+	}
+	return arrInt, nil
+}

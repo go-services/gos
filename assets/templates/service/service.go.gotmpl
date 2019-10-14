@@ -1,0 +1,11 @@
+package {{ .ProjectModule }}
+
+// @service()
+type Service interface {
+}
+
+type baseService struct{}
+
+func New() Service {
+    return &baseService{}
+}

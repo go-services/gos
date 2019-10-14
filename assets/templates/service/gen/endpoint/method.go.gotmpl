@@ -1,0 +1,59 @@
+package endpoint
+import (
+	"context"
+	"github.com/go-kit/kit/endpoint"
+	service "{{ .RootPkg }}"
+)
+type {{ .Name }}Response struct {
+{{  if .Response }} Response {{ with index .Results 0}} {{ .Type }} {{ end }}{{ end }}
+    Err error
+}
+type {{ .Name }}EndpointFunc func({{ paramsString .Params}}) (response {{ .Name }}Response, err error)
+type {{ .Name }}EndpointMiddleware func({{ .Name }}EndpointFunc) {{ .Name }}EndpointFunc
+type {{ .Name }}Endpoint interface {
+	Middleware(...{{ .Name }}EndpointMiddleware)
+	Endpoint() endpoint.Endpoint
+	Set({{ .Name }}EndpointFunc)
+}
+type {{ toLowerFirst .Name }} struct {
+	endpoint         {{ .Name }}EndpointFunc
+	middleware       []{{ .Name }}EndpointMiddleware
+	globalMiddleware []endpoint.Middleware
+}
+
+func make{{ .Name }}Endpoint(svc service.{{ .ServiceInterfaceName }}, global ...endpoint.Middleware) {{ .Name }}Endpoint {
+	return &{{ toLowerFirst .Name }}{
+		endpoint:         {{ toLowerFirst .Name }}Endpoint(svc),
+		globalMiddleware: global,
+	}
+}
+
+func {{ toLowerFirst .Name }}Endpoint(b service.{{ .ServiceInterfaceName }}) {{ .Name }}EndpointFunc {
+	return func(ctx context.Context{{  if .Request }}, req {{ with index .Params 1 }} {{ .Type}} {{ end }} {{ end }}) ({{ .Name }}Response, error) {
+		{{  if .Response }} res, {{ end }} err := b.{{ .Name }}(ctx{{ if .Request }}, req {{ end }})
+		return {{ .Name }}Response{{"{"}}{{  if .Response }}Response:res, {{ end }}Err: err}, nil
+	}
+}
+
+func (e *{{ toLowerFirst .Name }}) Endpoint() endpoint.Endpoint {
+	ep := e.endpoint
+	for _, mdw := range e.middleware {
+		ep = mdw(ep)
+	}
+	kitEp := func(ctx context.Context, request interface{}) (response interface{}, err error) {
+        {{ if .Request }}req := request.({{ with index .Params 1 }} {{ .Type }} {{ end }}) {{ end }}
+        return ep(ctx{{ if  .Request }}, req{{ end }})
+	}
+	for _, mdw := range e.globalMiddleware {
+		kitEp = mdw(kitEp)
+	}
+	return kitEp
+}
+
+func (e *{{ toLowerFirst .Name }}) Set(endpoint {{ .Name }}EndpointFunc) {
+	e.endpoint = endpoint
+}
+
+func (e *{{ toLowerFirst .Name }}) Middleware(mdw ...{{ .Name }}EndpointMiddleware) {
+	e.middleware = append(e.middleware, mdw...)
+}

@@ -1,0 +1,115 @@
+package http
+import (
+	"{{ .RootPkg }}/gen/endpoint"
+	"{{ .RootPkg }}/gen/endpoint"
+	"{{ .RootPkg }}/gen/utils"
+	"context"
+	"github.com/gorilla/mux"
+	"encoding/json"
+
+	goKitEndpoint "github.com/go-kit/kit/endpoint"
+	goKitHttp "github.com/go-kit/kit/transport/http"
+	goHttp "net/http"
+{{if .RequestImport}}{{with .RequestImport}}{{.Alias}} "{{.Path}}" {{end}}{{end}}
+{{if .ResponseImport}}{{with .ResponseImport}}{{.Alias}} "{{.Path}}" {{end}}{{end}}
+)
+type {{ .Name }}DecodeRequestFunc func(context.Context{{if .Request}} , *goHttp.Request{{ end }}) ({{if .Request}} {{ with index .Params 1 }} {{.Type}} {{ end }}, {{ end }}error)
+
+type {{ .Name }}EncodeResponseFunc func(context.Context, goHttp.ResponseWriter{{if .Response}}, {{ with index .Results 0}} {{ .Type }} {{ end }}{{end}}) error
+
+type {{ toLowerFirst .Name}} struct {
+	methodRoutes []MethodRoute
+	options      []goKitHttp.ServerOption
+	decoder      {{ .Name }}DecodeRequestFunc
+	encoder      {{ .Name }}EncodeResponseFunc
+	endpoint     goKitEndpoint.Endpoint
+	handle       goHttp.Handler
+}
+
+type {{ .Name }}HTTP interface {
+	MethodRoutes() []MethodRoute
+	AddMethodRoutes(...MethodRoute)
+	SetDecoder({{ .Name }}DecodeRequestFunc)
+	SetEncoder({{ .Name }}EncodeResponseFunc)
+	SetHandle(goHttp.Handler)
+	Options([]goKitHttp.ServerOption)
+	Handler() goHttp.Handler
+}
+
+func make{{.Name}}HttpTransport(endpoint goKitEndpoint.Endpoint) {{.Name}}HTTP {
+	return &{{ toLowerFirst .Name }}{
+		methodRoutes: {{ toLowerFirst .Name }}RouteMethods(),
+		decoder:      {{ toLowerFirst .Name }}Decoder,
+		encoder:      {{ toLowerFirst .Name }}Encoder,
+		endpoint:     endpoint,
+	}
+}
+
+func {{ toLowerFirst .Name }}RouteMethods() []MethodRoute {
+	return []MethodRoute{
+		{{with .HTTPTransport}}{{range .MethodRoutes}}{
+			Name:   "{{.Name}}",
+			Route:  "{{.Route}}",
+			Methods: []Method{{"{"}}{{.MethodsAll}}{{"}"}},
+		},
+	{{end}}}{{end}}
+}
+func {{ toLowerFirst .Name }}Decoder(_ context.Context{{if .Request}}, r *goHttp.Request{{ end }}) ({{if .Request}}request {{ with index .Params 1}} {{ .Type }} {{ end }}, {{end}}err error) {
+	{{ .HTTPDecoderSource }}
+}
+
+func {{ toLowerFirst .Name }}Encoder(ctx context.Context, w goHttp.ResponseWriter{{if .Response}}, response {{ with index .Results 0}} {{ .Type }} {{ end }}{{end}}) error {
+	{{if .Response}}return goKitHttp.EncodeJSONResponse(ctx, w, response){{else}}return nil{{ end }}
+}
+
+func (h *{{ toLowerFirst .Name }}) MethodRoutes() []MethodRoute {
+	return h.methodRoutes
+}
+
+func (h *{{ toLowerFirst .Name }}) Options(options []goKitHttp.ServerOption) {
+	h.options = append(h.options, options...)
+}
+
+func (h *{{ toLowerFirst .Name }}) AddMethodRoutes(methodRoutes ...MethodRoute) {
+	h.methodRoutes = append(h.methodRoutes, methodRoutes...)
+}
+
+func (h *{{ toLowerFirst .Name }}) SetDecoder(decoder {{.Name}}DecodeRequestFunc) {
+	h.decoder = decoder
+}
+
+func (h *{{ toLowerFirst .Name }}) SetEncoder(encoder {{.Name}}EncodeResponseFunc) {
+	h.encoder = encoder
+}
+
+func (h *{{ toLowerFirst .Name }}) SetHandle(handle goHttp.Handler) {
+	h.handle = handle
+}
+
+func (h *{{ toLowerFirst .Name }}) Handler() goHttp.Handler {
+	if h.handle != nil {
+		return h.handle
+	}
+	encoder := func(ctx context.Context, w goHttp.ResponseWriter, response interface{}) error {
+		epResponse := response.(endpoint.{{.Name}}Response)
+		if epResponse.Err != nil {
+			defaultErrorEncoder(ctx, epResponse.Err, w)
+			return nil
+		}
+        {{ if .Response}}res := epResponse.Response{{ end }}
+		return h.encoder(ctx, w{{ if .Response}}, res{{ end }})
+	}
+	decoder := func(ctx context.Context, r *goHttp.Request) (re interface{}, err error) {
+        {{ if .Request }}
+		return h.decoder(ctx, r)
+        {{else}}
+        return nil, h.decoder(ctx)
+        {{end}}
+	}
+	return goKitHttp.NewServer(
+		h.endpoint,
+		decoder,
+		encoder,
+		h.options...,
+	)
+}

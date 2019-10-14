@@ -1,0 +1,90 @@
+package http
+
+import (
+	"{{ .RootPkg }}/gen/endpoint"
+	"github.com/gorilla/mux"
+	goHttp "net/http"
+
+	goKitHttp "github.com/go-kit/kit/transport/http"
+)
+
+type Method string
+
+const (
+	GET     Method = "GET"
+	PUT            = "PUT"
+	POST           = "POST"
+	HEAD           = "HEAD"
+	PATCH          = "PATCH"
+	DELETE         = "DELETE"
+	OPTIONS        = "OPTIONS"
+)
+
+type MethodRoute struct {
+	Name   string
+	Methods []Method
+	Route  string
+}
+
+type HTTP interface {
+	MethodRoutes() []MethodRoute
+	Options([]goKitHttp.ServerOption)
+	Handler() goHttp.Handler
+}
+type Transport interface {
+	{{ range .Endpoints }}{{ .Name }}() {{ .Name }}HTTP
+{{ end }}
+	Iterate(func(httpTransport HTTP))
+}
+
+type httpTransport struct {
+	{{ range .Endpoints}}{{ toLowerFirst .Name}} {{ .Name }}HTTP
+{{ end }}}
+
+var defaultErrorEncoder = goKitHttp.DefaultErrorEncoder
+
+func SetDefaultErrorEncoder(encoder goKitHttp.ErrorEncoder) {
+	defaultErrorEncoder = encoder
+}
+func MakeHttpTransport(endpoints endpoint.Endpoints, global ...goKitHttp.ServerOption) Transport {
+	httpTransport := makeRootHttpTransport(endpoints)
+	{{ range .Endpoints }}httpTransport.{{ .Name }}().Options(global)
+	{{ end }}return httpTransport
+}
+func makeRootHttpTransport(endpoints endpoint.Endpoints) Transport {
+	return &httpTransport{
+		{{ range .Endpoints}}{{ toLowerFirst .Name }}:    make{{ .Name }}HttpTransport(endpoints.{{ .Name }}().Endpoint()),
+	{{ end }}}
+}
+{{ range .Endpoints}}
+func (t *httpTransport) {{ .Name }}() {{ .Name }}HTTP {
+	return t.{{ toLowerFirst .Name }}
+}
+{{ end }}
+func (t *httpTransport) Iterate(iterFunc func(HTTP)) {
+	all := []HTTP{
+		{{ range .Endpoints }}t.{{ toLowerFirst .Name }},
+	{{ end }}}
+
+	for _, m := range all {
+		iterFunc(m)
+	}
+}
+
+func SetupHttp(httpTransport Transport, router *mux.Router) {
+	httpTransport.Iterate(func(method HTTP) {
+		for _, route := range method.MethodRoutes() {
+			var methods []string
+			for _, method := range route.Methods{
+				methods = append(methods, string(method))
+			}
+			router.Methods(methods...).Path(route.Route).Handler(method.Handler())
+		}
+	})
+}
+
+func AddHttpServerOption(httpTransport Transport, opts ...goKitHttp.ServerOption) {
+	httpTransport.Iterate(func(method HTTP) {
+		method.Options(opts)
+	})
+}

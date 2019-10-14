@@ -1,0 +1,23 @@
+package endpoint
+import (
+	 service "{{ .RootPkg }}"
+	"github.com/go-kit/kit/endpoint"
+)
+type Endpoints interface {
+{{ range .Endpoints }} 	{{ .Name }}() {{ .Name }}Endpoint
+{{ end }}}
+
+type endpoints struct {
+{{ range .Endpoints }}	{{ toLowerFirst .Name }}  {{ .Name }}Endpoint
+{{ end }}}
+
+func MakeEndpoints(svc service.{{.InterfaceName}}, globalMiddleware ...endpoint.Middleware) Endpoints {
+	return &endpoints{
+		{{ range .Endpoints }}		{{ toLowerFirst .Name}}:	make{{ .Name }}Endpoint(svc, globalMiddleware...),
+	{{ end }}}
+}
+
+{{ range .Endpoints }}	func (svcEndpoints endpoints) {{ .Name }}() {{ .Name }}Endpoint {
+	return svcEndpoints.{{ toLowerFirst .Name }}
+}
+{{ end }}
