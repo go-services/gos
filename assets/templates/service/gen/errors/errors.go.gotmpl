@@ -1,0 +1,37 @@
+package errors
+
+import (
+	"encoding/json"
+)
+
+type Marshaler func(err error) JsonError
+
+type JsonError interface {
+	error
+	json.Marshaler
+}
+
+type errorJson struct {
+	err error
+}
+
+func (e errorJson) MarshalJSON() ([]byte, error) {
+	return json.Marshal(struct {
+		Message string `json:"message"`
+	}{
+		Message: e.Error(),
+	})
+}
+func (e errorJson) Error() string {
+	return e.err.Error()
+}
+
+var defaultErrorMarshaler = func(err error) JsonError {
+	return &errorJson{
+		err: err,
+	}
+}
+
+func SetDefaultErrorMarshaler(marshaler Marshaler) {
+	defaultErrorMarshaler = marshaler
+}

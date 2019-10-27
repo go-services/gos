@@ -45,6 +45,7 @@ type Endpoint struct {
 type Service struct {
 	// interface name
 	InterfaceName string
+	HTTPAddress   string
 	RootPkg       string
 	ServiceName   string
 	Package       string
@@ -53,7 +54,7 @@ type Service struct {
 	Endpoints     []Endpoint
 }
 
-func NewFromSource(src source.Source, svcName, mod string) (*Service, error) {
+func NewFromSource(src source.Source, svcName, mod, httpAddress string) (*Service, error) {
 	inf := findServiceInterface(src)
 	if inf == nil {
 		return nil, fmt.Errorf(
@@ -65,6 +66,7 @@ func NewFromSource(src source.Source, svcName, mod string) (*Service, error) {
 		ServiceName:   svcName,
 		RootPkg:       fmt.Sprintf("%s/%s", mod, svcName),
 		InterfaceName: inf.Name(),
+		HTTPAddress:   httpAddress,
 		serviceFs:     afero.NewBasePathFs(fs.AppFs(), svcName),
 		Package:       src.Package(),
 		Module:        mod,
@@ -147,6 +149,8 @@ func (s Service) Generate() error {
 	files := map[string]string{
 		"templates/service/gen/service.go.gotmpl":             "gen/gen.go",
 		"templates/service/gen/cmd/cmd.go.gotmpl":             "gen/cmd/cmd.go",
+		"templates/service/gen/errors/errors.go.gotmpl":       "gen/errors/errors.go",
+		"templates/service/gen/errors/http.go.gotmpl":         "gen/errors/http.go",
 		"templates/service/gen/utils/utils.go.gotmpl":         "gen/utils/utils.go",
 		"templates/service/gen/endpoint/endpoint.go.gotmpl":   "gen/endpoint/endpoint.go",
 		"templates/service/gen/transport/transport.go.gotmpl": "gen/transport/transport.go",
@@ -160,12 +164,32 @@ func (s Service) Generate() error {
 	if err := s.generateEndpoints(); err != nil {
 		return err
 	}
+	if err := s.generateCmd(); err != nil {
+		return err
+	}
 	return nil
 }
 
 func (s Service) generateEndpoints() error {
 	for _, ep := range s.Endpoints {
 		if err := ep.Generate(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s Service) generateCmd() error {
+	if b, err := afero.Exists(s.serviceFs, "cmd/main.go"); err != nil {
+		return err
+	} else if b {
+		return nil
+	}
+	files := map[string]string{
+		"templates/service/cmd/main.go.gotmpl": "cmd/main.go",
+	}
+	for k, v := range files {
+		if err := generateFile(s.serviceFs, k, v, s); err != nil {
 			return err
 		}
 	}

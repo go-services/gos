@@ -10,19 +10,27 @@ func StringToInt(s string) (int, error) {
 	return int(i64), err
 }
 
-func StringToFloat64(s string) (float64, error) {
-	f64, err := strconv.ParseFloat(strings.Trim(s, " "), 64)
+func StringToFloat64(s string) (f64 float64, err error) {
+	if s == "" {
+		return
+	}
+	f64, err = strconv.ParseFloat(strings.Trim(s, " "), 64)
 	return f64, err
 }
-func StringToFloat32(s string) (float32, error) {
+func StringToFloat32(s string) (f32 float32, err error) {
+	if s == "" {
+		return
+	}
 	f64, err := strconv.ParseFloat(strings.Trim(s, " "), 32)
 	return float32(f64), err
 }
-func StringToFloat64Array(s string) ([]float64, error) {
+func StringToFloat64Array(s string) (arrFloat []float64, err error) {
+	if s == "" {
+		return
+	}
 	s = strings.Replace(s, ", ", ",", -1)
 	s = strings.Trim(s, " ")
 	arrStr := strings.Split(s, ",")
-	var arrFloat []float64
 	for _, s := range arrStr {
 		f64, err := strconv.ParseFloat(strings.Trim(s, " "), 64)
 		if err != nil {
@@ -32,11 +40,13 @@ func StringToFloat64Array(s string) ([]float64, error) {
 	}
 	return arrFloat, nil
 }
-func StringToFloat32Array(s string) ([]float32, error) {
+func StringToFloat32Array(s string) (arrFloat []float32, err error) {
+	if s == "" {
+		return
+	}
 	s = strings.Replace(s, ", ", ",", -1)
 	s = strings.Trim(s, " ")
 	arrStr := strings.Split(s, ",")
-	var arrFloat []float32
 	for _, s := range arrStr {
 		f64, err := strconv.ParseFloat(strings.Trim(s, " "), 32)
 		if err != nil {
@@ -47,7 +57,10 @@ func StringToFloat32Array(s string) ([]float32, error) {
 	return arrFloat, nil
 }
 
-func StringToBool(s string) (bool, error) {
+func StringToBool(s string) (b bool, err error) {
+	if s == "" {
+		return
+	}
 	return strconv.ParseBool(s)
 }
 
@@ -57,11 +70,13 @@ func StringToStringArray(s string) []string {
 	return strings.Split(s, ",")
 }
 
-func StringToIntArray(s string) ([]int, error) {
+func StringToIntArray(s string) (arrInt []int, err error) {
+	if s == "" {
+		return
+	}
 	s = strings.Replace(s, ", ", ",", -1)
 	s = strings.Trim(s, " ")
 	arrStr := strings.Split(s, ",")
-	var arrInt []int
 	for _, s := range arrStr {
 		i64, err := strconv.ParseInt(strings.Trim(s, " "), 10, 32)
 		if err != nil {

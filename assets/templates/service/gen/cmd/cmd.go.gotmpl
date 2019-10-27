@@ -16,10 +16,10 @@ import (
 	generatedTransport "{{ .RootPkg }}/gen/transport/http"
 )
 
-func Run(transports transport.Transports, logger log.Logger) {
+func Run(transports transport.Transports, router *mux.Router, logger log.Logger) {
 	var g run.Group
 	{
-		err := setupTransports(&g, transports, ":8088", logger)
+		err := setupTransports(&g, transports, router, logger)
 		if err != nil {
 			_ = logger.Log("transport", "HTTP", "during", "Listen", "err", err)
 			os.Exit(1)
@@ -49,21 +49,22 @@ func Run(transports transport.Transports, logger log.Logger) {
 		debug.PrintStack()
 	}
 }
-func setupTransports(g *run.Group, transports transport.Transports, httpAddress string, logger log.Logger) error {
-	router := mux.NewRouter()
-	listener, err := net.Listen("tcp", httpAddress)
-	if err != nil {
-		return err
-	}
-	generatedTransport.SetupHttp(transports.HTTP(), router)
-	g.Add(func() error {
-		_ = logger.Log("transport", "HTTP", "addr", httpAddress)
-		return http.Serve(listener, router)
-	}, func(error) {
-		err := listener.Close()
+func setupTransports(g *run.Group, transports transport.Transports, router *mux.Router, logger log.Logger) error {
+	if transports.HTTP() != nil {
+		listener, err := net.Listen("tcp", generatedTransport.Address())
 		if err != nil {
-			fmt.Printf("There where blocked Accept operations when closing listener : %v", err)
+			return err
 		}
-	})
+		generatedTransport.SetupHttp(transports.HTTP(), router)
+		g.Add(func() error {
+			_ = logger.Log("transport", "HTTP", "addr", generatedTransport.Address())
+			return http.Serve(listener, router)
+		}, func(error) {
+			err := listener.Close()
+			if err != nil {
+				fmt.Printf("There where blocked Accept operations when closing listener : %v", err)
+			}
+		})
+	}
 	return nil
 }

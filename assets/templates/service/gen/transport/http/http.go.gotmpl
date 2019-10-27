@@ -11,13 +11,15 @@ import (
 type Method string
 
 const (
-	GET     Method = "GET"
-	PUT            = "PUT"
-	POST           = "POST"
-	HEAD           = "HEAD"
-	PATCH          = "PATCH"
-	DELETE         = "DELETE"
-	OPTIONS        = "OPTIONS"
+	GET     Method = goHttp.MethodGet
+	PUT            = goHttp.MethodPut
+	POST           = goHttp.MethodPost
+	HEAD           = goHttp.MethodHead
+	PATCH          = goHttp.MethodPatch
+	DELETE         = goHttp.MethodDelete
+	OPTIONS        = goHttp.MethodOptions
+	TRACE          = goHttp.MethodTrace
+	CONNECT        = goHttp.MethodConnect
 )
 
 type MethodRoute struct {
@@ -46,6 +48,16 @@ var defaultErrorEncoder = goKitHttp.DefaultErrorEncoder
 func SetDefaultErrorEncoder(encoder goKitHttp.ErrorEncoder) {
 	defaultErrorEncoder = encoder
 }
+
+var defaultHttpAddress = "{{ .HTTPAddress }}"
+
+func SetHttpAddress(address string) {
+	defaultHttpAddress = address
+}
+func Address() string {
+	return defaultHttpAddress
+}
+
 func MakeHttpTransport(endpoints endpoint.Endpoints, global ...goKitHttp.ServerOption) Transport {
 	httpTransport := makeRootHttpTransport(endpoints)
 	{{ range .Endpoints }}httpTransport.{{ .Name }}().Options(global)

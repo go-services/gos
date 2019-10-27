@@ -1,0 +1,64 @@
+package errors
+
+import (
+	"errors"
+	"net/http"
+
+	goKitHttp "github.com/go-kit/kit/transport/http"
+)
+
+type HTTPResponse interface {
+	JsonError
+	goKitHttp.StatusCoder
+	goKitHttp.Headerer
+}
+
+type httpErrResponse struct {
+	headers http.Header
+	status  int
+	err     JsonError
+}
+
+func HTTPCustomError(err string, status int, headers http.Header) HTTPResponse {
+	return &httpErrResponse{
+		err:     defaultErrorMarshaler(errors.New(err)),
+		status:  status,
+		headers: headers,
+	}
+}
+
+func HTTPServerError(err string) HTTPResponse {
+	return &httpErrResponse{
+		err:    defaultErrorMarshaler(errors.New(err)),
+		status: 500,
+	}
+}
+func HTTPNotFoundErr(err string) HTTPResponse {
+	return &httpErrResponse{
+		err:    defaultErrorMarshaler(errors.New(err)),
+		status: 404,
+	}
+}
+
+func HTTPBadRequest(err string) HTTPResponse {
+	return &httpErrResponse{
+		err:    defaultErrorMarshaler(errors.New(err)),
+		status: 400,
+	}
+}
+
+func (e httpErrResponse) StatusCode() int {
+	return e.status
+}
+
+func (e httpErrResponse) Headers() http.Header {
+	return e.headers
+}
+
+func (e httpErrResponse) MarshalJSON() ([]byte, error) {
+	return e.err.MarshalJSON()
+}
+
+func (e httpErrResponse) Error() string {
+	return e.err.Error()
+}

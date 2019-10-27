@@ -1,6 +1,6 @@
 package config
 
 type KitConfig struct {
-	Module   string
-	Services []string
+	Module   string   `json:"module"`
+	Services []string `json:"services"`
 }
