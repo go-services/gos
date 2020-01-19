@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path"
+	"strings"
 	"unicode"
 	"unicode/utf8"
 
@@ -21,6 +22,11 @@ import (
 const (
 	ANNOTATION = "service"
 )
+
+type EndpointMiddleware struct {
+	Alias  string
+	Method string
+}
 
 type Endpoint struct {
 	Name string
@@ -37,6 +43,9 @@ type Endpoint struct {
 
 	RequestImport  *code.Import
 	ResponseImport *code.Import
+
+	Middlewares        []EndpointMiddleware
+	MiddlewarePackages map[string]string
 
 	HTTPTransport     *HTTPTransport
 	HTTPDecoderSource string
@@ -55,7 +64,7 @@ type Service struct {
 }
 
 func NewFromSource(src source.Source, svcName, mod, httpAddress string) (*Service, error) {
-	inf := findServiceInterface(src)
+	inf := FindServiceInterface(src)
 	if inf == nil {
 		return nil, fmt.Errorf(
 			"error while parsing service : %s",
@@ -137,6 +146,7 @@ func (s Service) parseEndpoints(methods []source.InterfaceMethod) (eps []Endpoin
 		}
 		ep.HTTPTransport = parseHTTPTransport(method)
 		ep.HTTPDecoderSource = ep.HTTPTransport.Decoder(ep)
+		ep.MiddlewarePackages, ep.Middlewares = parseMiddleware(method)
 		eps = append(eps, ep)
 	}
 	return
@@ -198,8 +208,9 @@ func (s Service) generateCmd() error {
 
 func (e Endpoint) Generate() error {
 	files := map[string]string{
-		"templates/service/gen/endpoint/method.go.gotmpl":       fmt.Sprintf("gen/endpoint/%s.go", strutil.ToSnakeCase(e.Name)),
-		"templates/service/gen/transport/http/method.go.gotmpl": fmt.Sprintf("gen/transport/http/%s.go", strutil.ToSnakeCase(e.Name)),
+		"templates/service/gen/endpoint/definitions/method.go.gotmpl": fmt.Sprintf("gen/endpoint/definitions/%s.go", strutil.ToSnakeCase(e.Name)),
+		"templates/service/gen/endpoint/method.go.gotmpl":             fmt.Sprintf("gen/endpoint/%s.go", strutil.ToSnakeCase(e.Name)),
+		"templates/service/gen/transport/http/method.go.gotmpl":       fmt.Sprintf("gen/transport/http/%s.go", strutil.ToSnakeCase(e.Name)),
 	}
 	for k, v := range files {
 		if err := generateFile(e.serviceFs, k, v, e); err != nil {
@@ -217,7 +228,7 @@ func findServiceMethods(inf source.Interface) (methods []source.InterfaceMethod)
 	}
 	return methods
 }
-func findServiceInterface(src source.Source) *source.Interface {
+func FindServiceInterface(src source.Source) *source.Interface {
 	for _, inf := range src.Interfaces() {
 		annotations := source.FindAnnotations(ANNOTATION, &inf)
 		if len(annotations) > 0 {
@@ -297,4 +308,34 @@ func generateFile(serviceFs afero.Fs, tpl, path string, data interface{}) error 
 		return err
 	}
 	return fs.WriteFile(serviceFs, path, src)
+}
+
+func parseMiddleware(method source.InterfaceMethod) (packages map[string]string, mdw []EndpointMiddleware) {
+	annotations := source.FindAnnotations("middleware", &method)
+	packages = map[string]string{}
+
+	for _, v := range annotations {
+		pth := v.Get("path").String()
+		pathParts := strings.Split(pth, ".")
+		if len(pathParts) == 1 {
+			mdw = append(mdw, EndpointMiddleware{
+				Alias:  "",
+				Method: pathParts[0],
+			})
+			continue
+		}
+		ep := EndpointMiddleware{
+			Alias:  "",
+			Method: pathParts[len(pathParts)-1],
+		}
+		pkg := strings.Join(pathParts[:len(pathParts)-1], "/")
+		if v, ok := packages[pkg]; ok {
+			ep.Alias = v
+		} else {
+			packages[pkg] = fmt.Sprintf("mdw%d", len(packages)+1)
+			ep.Alias = packages[pkg]
+		}
+		mdw = append(mdw, ep)
+	}
+	return
 }

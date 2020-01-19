@@ -92,7 +92,7 @@ func (h HTTPTransport) Decoder(ep Endpoint) string {
 	var queries []jen.Code
 	var body *jen.Statement
 	for _, field := range ep.Request.Fields {
-		if !isExported(field.Name) {
+		if !isExported(field.Name) || field.Tags == nil {
 			continue
 		}
 		if url := getTag("gos_url", *field.Tags); url != "" {

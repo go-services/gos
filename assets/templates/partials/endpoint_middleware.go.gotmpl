@@ -1,0 +1,7 @@
+
+func {{.Name}}(next definitions.{{.EndpointName}}EndpointFunc) definitions.{{.EndpointName}}EndpointFunc {
+	return func(ctx context.Context, request auth.{{.EndpointName}}Request) (response definitions.{{.EndpointName}}Response, err error) {
+		// TODO: Implement the middleware logic here
+		return next(ctx, request)
+	}
+}

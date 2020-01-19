@@ -49,7 +49,6 @@ func (w *Watcher) Watch() {
 					for _, svc := range w.kitConfig.Services {
 						if strings.HasPrefix(pth, svc) {
 							w.update <- svc
-							return
 						}
 					}
 					if pth == "kit.json" {
