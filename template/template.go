@@ -6,9 +6,9 @@ import (
 	"io/ioutil"
 	"text/template"
 
-	"github.com/spf13/afero"
-
 	"golang.org/x/tools/imports"
+
+	"github.com/spf13/afero"
 )
 
 func GenerateFile(serviceFs afero.Fs, tpl, path string, data interface{}) error {
