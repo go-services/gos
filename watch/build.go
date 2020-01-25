@@ -2,8 +2,7 @@ package watch
 
 import (
 	"fmt"
-	"gos/fs"
-	"gos/service"
+	"gos/generator"
 	"log"
 	"math/rand"
 	"os"
@@ -13,8 +12,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-
-	"github.com/go-services/source"
 )
 
 const binaryName = "kit-watcher"
@@ -48,24 +45,9 @@ func (b *Builder) Build() {
 				httpAddress = fmt.Sprintf(":%d", b.watcher.port+i+1)
 			}
 		}
-		log.Printf("Generating service %s", svc)
-		data, err := fs.ReadFile(b.watcher.rootFs, fmt.Sprintf("%s/service.go", svc))
+		err := generator.Generate(svc, b.watcher.kitConfig.Module, httpAddress, b.watcher.rootFs)
 		if err != nil {
-			log.Println("A read error occurred. Please update your code..: ", err)
-			continue
-		}
-		src, err := source.New(data)
-		if err != nil {
-			log.Println("A read error occurred. Please update your code..: ", err)
-			continue
-		}
-		srv, err := service.NewFromSource(*src, svc, b.watcher.kitConfig.Module, httpAddress)
-		if err != nil {
-			log.Println("A read error occurred. Please update your code..: ", err)
-			continue
-		}
-		if err := srv.Generate(); err != nil {
-			log.Println("A generate error occurred. Please update your code...", err)
+			log.Println(err)
 			continue
 		}
 		pkg := path.Join(b.watcher.kitConfig.Module, svc, "cmd")

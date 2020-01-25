@@ -28,6 +28,11 @@ type EndpointMiddleware struct {
 	Method string
 }
 
+type Middleware struct {
+	Alias  string
+	Method string
+}
+
 type Endpoint struct {
 	Name string
 
@@ -53,14 +58,17 @@ type Endpoint struct {
 
 type Service struct {
 	// interface name
-	InterfaceName string
-	HTTPAddress   string
-	RootPkg       string
-	ServiceName   string
-	Package       string
-	Module        string
-	serviceFs     afero.Fs
-	Endpoints     []Endpoint
+	InterfaceName      string
+	HTTPAddress        string
+	RootPkg            string
+	ServiceName        string
+	Package            string
+	Module             string
+	Middlewares        []Middleware
+	MiddlewarePackages map[string]string
+	Endpoints          []Endpoint
+
+	serviceFs afero.Fs
 }
 
 func NewFromSource(src source.Source, svcName, mod, httpAddress string) (*Service, error) {
@@ -80,6 +88,7 @@ func NewFromSource(src source.Source, svcName, mod, httpAddress string) (*Servic
 		Package:       src.Package(),
 		Module:        mod,
 	}
+	svc.MiddlewarePackages, svc.Middlewares = parseMiddleware(*inf)
 	eps, err := svc.parseEndpoints(findServiceMethods(*inf))
 	if err != nil {
 		return nil, err
@@ -146,7 +155,7 @@ func (s Service) parseEndpoints(methods []source.InterfaceMethod) (eps []Endpoin
 		}
 		ep.HTTPTransport = parseHTTPTransport(method)
 		ep.HTTPDecoderSource = ep.HTTPTransport.Decoder(ep)
-		ep.MiddlewarePackages, ep.Middlewares = parseMiddleware(method)
+		ep.MiddlewarePackages, ep.Middlewares = parseEndpointMiddleware(method)
 		eps = append(eps, ep)
 	}
 	return
@@ -158,6 +167,7 @@ func (s Service) Generate() error {
 	}
 	files := map[string]string{
 		"templates/service/gen/service.go.gotmpl":             "gen/gen.go",
+		"templates/service/gen/service/service.go.gotmpl":     "gen/service/service.go",
 		"templates/service/gen/cmd/cmd.go.gotmpl":             "gen/cmd/cmd.go",
 		"templates/service/gen/errors/errors.go.gotmpl":       "gen/errors/errors.go",
 		"templates/service/gen/errors/http.go.gotmpl":         "gen/errors/http.go",
@@ -167,7 +177,7 @@ func (s Service) Generate() error {
 		"templates/service/gen/transport/http/http.go.gotmpl": "gen/transport/http/http.go",
 	}
 	for k, v := range files {
-		if err := generateFile(s.serviceFs, k, v, s); err != nil {
+		if err := template.GenerateFile(s.serviceFs, k, v, s); err != nil {
 			return err
 		}
 	}
@@ -199,7 +209,7 @@ func (s Service) generateCmd() error {
 		"templates/service/cmd/main.go.gotmpl": "cmd/main.go",
 	}
 	for k, v := range files {
-		if err := generateFile(s.serviceFs, k, v, s); err != nil {
+		if err := template.GenerateFile(s.serviceFs, k, v, s); err != nil {
 			return err
 		}
 	}
@@ -213,7 +223,7 @@ func (e Endpoint) Generate() error {
 		"templates/service/gen/transport/http/method.go.gotmpl":       fmt.Sprintf("gen/transport/http/%s.go", strutil.ToSnakeCase(e.Name)),
 	}
 	for k, v := range files {
-		if err := generateFile(e.serviceFs, k, v, e); err != nil {
+		if err := template.GenerateFile(e.serviceFs, k, v, e); err != nil {
 			return err
 		}
 	}
@@ -302,15 +312,7 @@ func checkMethodResults(params []code.Parameter) error {
 	}
 	return nil
 }
-func generateFile(serviceFs afero.Fs, tpl, path string, data interface{}) error {
-	src, err := template.CompileGoFromPath(tpl, data)
-	if err != nil {
-		return err
-	}
-	return fs.WriteFile(serviceFs, path, src)
-}
-
-func parseMiddleware(method source.InterfaceMethod) (packages map[string]string, mdw []EndpointMiddleware) {
+func parseEndpointMiddleware(method source.InterfaceMethod) (packages map[string]string, mdw []EndpointMiddleware) {
 	annotations := source.FindAnnotations("middleware", &method)
 	packages = map[string]string{}
 
@@ -325,6 +327,36 @@ func parseMiddleware(method source.InterfaceMethod) (packages map[string]string,
 			continue
 		}
 		ep := EndpointMiddleware{
+			Alias:  "",
+			Method: pathParts[len(pathParts)-1],
+		}
+		pkg := strings.Join(pathParts[:len(pathParts)-1], "/")
+		if v, ok := packages[pkg]; ok {
+			ep.Alias = v
+		} else {
+			packages[pkg] = fmt.Sprintf("mdw%d", len(packages)+1)
+			ep.Alias = packages[pkg]
+		}
+		mdw = append(mdw, ep)
+	}
+	return
+}
+
+func parseMiddleware(service source.Interface) (packages map[string]string, mdw []Middleware) {
+	annotations := source.FindAnnotations("middleware", &service)
+	packages = map[string]string{}
+
+	for _, v := range annotations {
+		pth := v.Get("path").String()
+		pathParts := strings.Split(pth, ".")
+		if len(pathParts) == 1 {
+			mdw = append(mdw, Middleware{
+				Alias:  "",
+				Method: pathParts[0],
+			})
+			continue
+		}
+		ep := Middleware{
 			Alias:  "",
 			Method: pathParts[len(pathParts)-1],
 		}

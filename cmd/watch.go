@@ -20,6 +20,6 @@ var watchCmd = &cobra.Command{
 }
 
 func init() {
-	watchCmd.Flags().IntP("start-port", "p", 8080, "Port to start services, each service will get an incremented port¬")
+	watchCmd.Flags().IntP("start-port", "p", 8080, "Port to start services, each service will get an incremented port")
 	rootCmd.AddCommand(watchCmd)
 }

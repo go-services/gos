@@ -1,0 +1,26 @@
+package middleware
+{{$mdwName := toTitle .Name}}
+{{$rootPkg := .RootPkg}}
+
+import (
+	genService "{{ $rootPkg }}/gen/service"
+	service "{{ $rootPkg }}"
+{{ range .Endpoints }}
+	{{if .RequestImport}}{{with .RequestImport}}{{if not (eq $rootPkg .Path)}}{{.Alias}} "{{.Path}}" {{end}}{{end}}{{end}}
+	{{if .ResponseImport}}{{with .ResponseImport}}{{if not (eq $rootPkg .Path)}}{{.Alias}} "{{.Path}}" {{end}}{{end}}{{end}}
+{{ end }}
+)
+func {{$mdwName}}() genService.Middleware {
+	return func(next service.{{ .InterfaceName }}) service.{{ .InterfaceName }} {
+		return {{ toLowerFirst $mdwName }}{next}
+	}
+}
+
+type {{ toLowerFirst $mdwName }} struct {
+	next   service.{{ .InterfaceName }}
+}
+{{ range .Endpoints }}
+    func (mw {{ toLowerFirst $mdwName }}) {{ .Name }}(ctx context.Context{{if .Request}}, request {{ with index .Params 1}} {{ .Type }} {{ end }}{{end}}) ({{if .Response}}response {{ with index .Results 0}} {{ .Type }} {{ end }}, {{end}}err error) {
+        return mw.next.{{ .Name }}(ctx{{if .Request}}, request{{end}})
+    }
+{{ end }}

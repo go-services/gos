@@ -24,9 +24,6 @@ var middlewareCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		if endpoint == "" {
-			return errors.New("endpoint needs to be defined, please use `-e` to define the service")
-		}
 		return generator.NewMiddleware(args[0], service, endpoint)
 	},
 }
