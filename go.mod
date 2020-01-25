@@ -3,6 +3,7 @@ module gos
 go 1.12
 
 require (
+	github.com/dave/jennifer v1.3.0
 	github.com/go-services/code v0.1.5
 	github.com/go-services/source v0.0.1-beta.1
 	github.com/ozgio/strutil v0.2.2
