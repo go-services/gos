@@ -1,7 +1,10 @@
 package service
 
 import (
+	"fmt"
 	"strings"
+
+	"github.com/ozgio/strutil"
 
 	"github.com/dave/jennifer/jen"
 	"github.com/go-services/code"
@@ -10,11 +13,11 @@ import (
 
 const (
 	HTTPAnnotation = "http"
+	GRPCAnnotation = "grpc"
 )
 
 type HTTPMethodRoute struct {
 	Name       string
-	Request    code.Struct
 	Methods    []string
 	MethodsAll string
 	Route      string
@@ -215,4 +218,164 @@ func convertFunc(fieldName, varName, tp string, query bool) *jen.Statement {
 func getTag(key string, tags code.FieldTags) string {
 	tag, _ := tags[key]
 	return tag
+}
+
+var protoTypeMap = map[string]string{
+	"float":   "double",
+	"float64": "double",
+	"float32": "float",
+	"int32":   "int32",
+	"int64":   "int64",
+	"int":     "int64",
+	"uint32":  "uint32",
+	"uint64":  "uint64",
+	"bool":    "bool",
+	"string":  "string",
+}
+
+type ProtoMessage struct {
+	Name   string
+	Params []ProtoMessageParam
+}
+type ProtoMessageParam struct {
+	Repeat   bool
+	Name     string
+	Type     string
+	Position int
+}
+type GRPCEndpoint struct {
+	messages []ProtoMessage
+}
+
+func (p *ProtoMessageParam) String() string {
+	s := ""
+	if p.Repeat {
+		s += "repeated"
+	}
+	return fmt.Sprintf("%s %s %s = %d", s, p.Type, p.Name, p.Position)
+}
+
+func (m *ProtoMessage) String() string {
+	s := fmt.Sprintf("message %s {\n", m.Name)
+	for _, v := range m.Params {
+		s += v.String() + "\n"
+	}
+	s += "}\n"
+	return s
+}
+
+type GRPCTransport struct {
+	endpoints []GRPCEndpoint
+}
+
+func parseGRPCTransport(svc *Service) *GRPCTransport {
+	tp := &GRPCTransport{}
+	structsCreated := map[string]string{}
+	for i, ep := range svc.Endpoints {
+		fmt.Println(ep.Name, structsCreated)
+		tp.endpoints = append(tp.endpoints, parseGRPCEndpoint(ep, structsCreated))
+		for _, msg := range tp.endpoints[i].messages {
+			fmt.Println(msg.String())
+		}
+	}
+	return tp
+}
+func parseGRPCEndpoint(ep Endpoint, structsCreated map[string]string) GRPCEndpoint {
+	var messages []ProtoMessage
+	if ep.Request != nil {
+		generateMessage(&messages, ep.Name+"Request", ep.Request, structsCreated)
+	}
+	responseMessage := ProtoMessage{
+		Name: ep.Name + "Response",
+		Params: []ProtoMessageParam{
+			{
+				Repeat:   false,
+				Name:     "Err",
+				Type:     "string",
+				Position: 1,
+			},
+		},
+	}
+	if ep.Response != nil {
+		messageName := ep.Name + "BaseResponse"
+		generateMessage(&messages, messageName, ep.Response, structsCreated)
+		responseMessage.Params = append(responseMessage.Params, ProtoMessageParam{
+			Repeat:   false,
+			Name:     "Response",
+			Type:     messageName,
+			Position: 2,
+		})
+
+	}
+	messages = append(messages, responseMessage)
+	return GRPCEndpoint{
+		messages: messages,
+	}
+}
+
+func getStructPathName(imp *code.Import, name string) string {
+	if imp == nil {
+		return ""
+	}
+	return imp.FilePath + getStructName(imp, name)
+}
+func getStructName(imp *code.Import, name string) string {
+	return strings.Title(strutil.ToCamelCase(imp.Alias)) + name
+}
+
+func generateMessage(messages *[]ProtoMessage, name string, structure *code.Struct, structsCreated map[string]string) {
+	message := ProtoMessage{
+		Name: name,
+	}
+	position := 1
+	for _, field := range structure.Fields {
+		tag := ""
+		if field.Tags != nil {
+			tag = getTag("gos_grpc", *field.Tags)
+		}
+		if !isExported(field.Name) && tag == "-" {
+			continue
+		}
+		if field.Type.Import != nil {
+			messageName, ok := structsCreated[getStructPathName(field.Type.Import, field.Type.Qualifier)]
+			if !ok {
+				s, err := findStruct(field.Type)
+				if err != nil {
+					panic(err)
+				}
+				messageName = name + "_" + getStructName(field.Type.Import, s.Name)
+				generateMessage(messages, messageName, s, structsCreated)
+			}
+			structsCreated[getStructPathName(field.Type.Import, field.Type.Qualifier)] = messageName
+			message.Params = append(message.Params, ProtoMessageParam{
+				Repeat:   field.Type.ArrayType,
+				Name:     field.Name,
+				Type:     messageName,
+				Position: position,
+			})
+		} else {
+			if field.Type.String() == "[]byte" {
+				message.Params = append(message.Params, ProtoMessageParam{
+					Name:     field.Name,
+					Type:     "bytes",
+					Position: position,
+				})
+			} else if field.Type.MapType != nil {
+
+			}
+			tp, ok := protoTypeMap[field.Type.Qualifier]
+			if !ok {
+				fmt.Printf("Type %s not supported\n", tp)
+				continue
+			}
+			message.Params = append(message.Params, ProtoMessageParam{
+				Repeat:   field.Type.ArrayType,
+				Name:     field.Name,
+				Type:     tp,
+				Position: position,
+			})
+		}
+		position++
+	}
+	*messages = append(*messages, message)
 }

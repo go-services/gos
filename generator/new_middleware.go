@@ -1,8 +1,6 @@
 package generator
 
 import (
-	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"gos/config"
@@ -19,30 +17,20 @@ import (
 )
 
 func NewMiddleware(name string, svc string, endpoint string) error {
-	appFs := fs.AppFs()
-	b, err := afero.Exists(appFs, "kit.json")
-	if err != nil {
+	if err := config.Exists(); err != nil {
 		return err
-	} else if !b {
-		return errors.New("not in a kit project, you need to be in a project to run this command")
 	}
-	b, err = afero.Exists(appFs, fmt.Sprintf("%s/service.go", svc))
-	if !b {
-		return errors.New("could not find service")
-	} else if err != nil {
-		return errors.New("a read error occurred: " + err.Error())
+	if err := service.Exists(svc); err != nil {
+		return err
 	}
+
 	name = strings.Title(strutil.ToCamelCase(name))
 
-	configData, err := fs.ReadFile(appFs, "kit.json")
-	if err != nil {
-		return errors.New("could not read kit.json")
-	}
-	var kitConfig config.KitConfig
-	err = json.NewDecoder(bytes.NewBufferString(configData)).Decode(&kitConfig)
+	gosConfig, err := config.Read()
 	if err != nil {
 		return err
 	}
+	appFs := fs.AppFs()
 
 	if endpoint != "" {
 		middlewareFilePath := fmt.Sprintf(
@@ -50,17 +38,16 @@ func NewMiddleware(name string, svc string, endpoint string) error {
 			svc,
 			template.ToLowerFirst(strutil.ToCamelCase(endpoint)),
 		)
-		b, err = afero.Exists(appFs, middlewareFilePath)
+		b, err := afero.Exists(appFs, middlewareFilePath)
 		var fileData string
 		if !b {
-			fileData = createEndpointMiddlewareFile(kitConfig.Module, svc)
+			fileData = createEndpointMiddlewareFile(gosConfig.Module, svc)
 		} else {
 			fileData, err = fs.ReadFile(appFs, middlewareFilePath)
 			if err != nil {
 				return err
 			}
 		}
-
 		mdwData := map[string]string{
 			"Name":         name,
 			"EndpointName": strings.Title(strutil.ToCamelCase(endpoint)),
@@ -87,7 +74,7 @@ func NewMiddleware(name string, svc string, endpoint string) error {
 		if err != nil {
 			return errors.New("A read error occurred. Please update your code..: " + err.Error())
 		}
-		svc, err := service.NewFromSource(*src, svc, kitConfig.Module, "")
+		svc, err := service.NewFromSource(*src, svc, gosConfig.Module, "")
 		if err != nil {
 			return errors.New("A read error occurred. Please update your code..: " + err.Error())
 		}
@@ -98,7 +85,7 @@ func NewMiddleware(name string, svc string, endpoint string) error {
 			"InterfaceName": svc.InterfaceName,
 			"Endpoints":     svc.Endpoints,
 		}
-		b, err = afero.Exists(appFs, middlewareFilePath)
+		b, err := afero.Exists(appFs, middlewareFilePath)
 		if b {
 			return errors.New("middleware file with the same name exists")
 		} else if err != nil {
@@ -109,10 +96,11 @@ func NewMiddleware(name string, svc string, endpoint string) error {
 			return err
 		}
 	}
-	return annotateEndpoint(appFs, kitConfig, svc, endpoint, name)
+	return annotateEndpoint(gosConfig, svc, endpoint, name)
 }
 
-func annotateEndpoint(appFs afero.Fs, kitConfig config.KitConfig, svc string, endpoint string, name string) error {
+func annotateEndpoint(gosConfig *config.GosConfig, svc string, endpoint string, name string) error {
+	appFs := fs.AppFs()
 	data, err := fs.ReadFile(appFs, fmt.Sprintf("%s/service.go", svc))
 	if err != nil {
 		return errors.New("A read error occurred. Please update your code..: " + err.Error())
@@ -131,13 +119,13 @@ func annotateEndpoint(appFs afero.Fs, kitConfig config.KitConfig, svc string, en
 	}
 	if endpoint != "" {
 		ep := strings.Title(strutil.ToCamelCase(endpoint))
-		mdwPath := fmt.Sprintf("%s.%s.%s.%s", kitConfig.Module, svc, "middleware", name)
+		mdwPath := fmt.Sprintf("%s.%s.%s.%s", gosConfig.Module, svc, "middleware", name)
 		err = src.CommentInterfaceMethod(inf.Name(), ep, fmt.Sprintf("@middleware(path=\"%s\")", mdwPath))
 		if err != nil {
 			return err
 		}
 	} else {
-		mdwPath := fmt.Sprintf("%s.%s.%s.%s", kitConfig.Module, svc, "middleware", name)
+		mdwPath := fmt.Sprintf("%s.%s.%s.%s", gosConfig.Module, svc, "middleware", name)
 		err = src.CommentInterface(inf.Name(), fmt.Sprintf("@middleware(path=\"%s\")", mdwPath))
 		if err != nil {
 			return err

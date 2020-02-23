@@ -29,13 +29,11 @@ type {{ toLowerFirst .Name}} struct {
 }
 
 type {{ .Name }}HTTP interface {
-	MethodRoutes() []MethodRoute
+	HTTP
 	AddMethodRoutes(...MethodRoute)
 	SetDecoder({{ .Name }}DecodeRequestFunc)
 	SetEncoder({{ .Name }}EncodeResponseFunc)
 	SetHandle(goHttp.Handler)
-	Options([]goKitHttp.ServerOption)
-	Handler() goHttp.Handler
 }
 
 func make{{.Name}}HttpTransport(endpoint goKitEndpoint.Endpoint) {{.Name}}HTTP {

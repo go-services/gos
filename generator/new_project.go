@@ -1,10 +1,12 @@
 package generator
 
 import (
-	"github.com/spf13/afero"
+	"gos/config"
 	"gos/fs"
 	"gos/template"
 	"strings"
+
+	"github.com/spf13/afero"
 
 	"github.com/ozgio/strutil"
 )
@@ -19,7 +21,7 @@ func NewProject(name string) error {
 		return err
 	}
 
-	gomod, err := template.CompileFromPath("templates/project/go.mod.gotmpl", map[string]string{
+	goMod, err := template.CompileFromPath("templates/project/go.mod.gotmpl", map[string]string{
 		"ProjectModule": moduleName,
 	})
 	if err != nil {
@@ -31,7 +33,7 @@ func NewProject(name string) error {
 	if err != nil {
 		return err
 	}
-	kitJson, err := template.CompileFromPath("templates/project/kit.json.gotmpl", map[string]string{
+	gosJson, err := template.CompileFromPath("templates/project/gos.json.gotmpl", map[string]string{
 		"ProjectModule": moduleName,
 	})
 	if err != nil {
@@ -40,10 +42,10 @@ func NewProject(name string) error {
 	if err := fs.WriteFile(projectFs, ".gitignore", gitignore); err != nil {
 		return err
 	}
-	if err := fs.WriteFile(projectFs, "go.mod", gomod); err != nil {
+	if err := fs.WriteFile(projectFs, "go.mod", goMod); err != nil {
 		return err
 	}
-	if err := fs.WriteFile(projectFs, "kit.json", kitJson); err != nil {
+	if err := fs.WriteFile(projectFs, config.FileName, gosJson); err != nil {
 		return err
 	}
 

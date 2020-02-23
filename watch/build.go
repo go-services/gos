@@ -14,7 +14,7 @@ import (
 	"time"
 )
 
-const binaryName = "kit-watcher"
+const binaryName = "gos-watcher"
 
 // Builder composes of both runner and watcher. Whenever watcher gets notified, builder starts a build process, and forces the runner to restart
 type Builder struct {
@@ -33,24 +33,24 @@ func (b *Builder) Build() {
 	go b.registerSignalHandler()
 	go func() {
 		// used for triggering the first build
-		for _, svc := range b.watcher.kitConfig.Services {
+		for _, svc := range b.watcher.gosConfig.Services {
 			b.watcher.update <- svc
 		}
 	}()
 
 	for svc := range b.watcher.Wait() {
 		var httpAddress string
-		for i, s := range b.watcher.kitConfig.Services {
+		for i, s := range b.watcher.gosConfig.Services {
 			if svc == s {
 				httpAddress = fmt.Sprintf(":%d", b.watcher.port+i+1)
 			}
 		}
-		err := generator.Generate(svc, b.watcher.kitConfig.Module, httpAddress, b.watcher.rootFs)
+		err := generator.Generate(svc, b.watcher.gosConfig.Module, httpAddress)
 		if err != nil {
 			log.Println(err)
 			continue
 		}
-		pkg := path.Join(b.watcher.kitConfig.Module, svc, "cmd")
+		pkg := path.Join(b.watcher.gosConfig.Module, svc, "cmd")
 		fileName := generateBinaryName(path.Join(svc, "cmd"))
 
 		log.Printf("Building service %s", svc)

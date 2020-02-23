@@ -23,6 +23,8 @@ const (
 	ANNOTATION = "service"
 )
 
+var fileSourceCache map[string]*source.Source
+
 type EndpointMiddleware struct {
 	Alias  string
 	Method string
@@ -68,10 +70,12 @@ type Service struct {
 	MiddlewarePackages map[string]string
 	Endpoints          []Endpoint
 
-	serviceFs afero.Fs
+	serviceFs     afero.Fs
+	GrpcTransport *GRPCTransport
 }
 
 func NewFromSource(src source.Source, svcName, mod, httpAddress string) (*Service, error) {
+	fileSourceCache = map[string]*source.Source{}
 	inf := FindServiceInterface(src)
 	if inf == nil {
 		return nil, fmt.Errorf(
@@ -94,11 +98,22 @@ func NewFromSource(src source.Source, svcName, mod, httpAddress string) (*Servic
 		return nil, err
 	}
 	svc.Endpoints = eps
+	svc.GrpcTransport = parseGRPCTransport(svc)
 	return svc, nil
 }
 
-func (s Service) fixMethodImport(param code.Parameter) code.Parameter {
-	if param.Type.Import == nil && isExported(param.Type.Qualifier) {
+func Exists(svc string) error {
+	b, err := afero.Exists(fs.AppFs(), fmt.Sprintf("%s/service.go", svc))
+	if !b {
+		return errors.New("could not find service")
+	} else if err != nil {
+		return errors.New("a read error occurred: " + err.Error())
+	}
+	return nil
+}
+
+func (s Service) fixMethodImport(tp code.Type) code.Type {
+	if tp.Import == nil && isExported(tp.Qualifier) {
 		currentPath, err := os.Getwd()
 		if err != nil {
 			panic(err)
@@ -106,13 +121,13 @@ func (s Service) fixMethodImport(param code.Parameter) code.Parameter {
 		if viper.GetString("testPath") != "" {
 			currentPath = path.Join(currentPath, viper.GetString("testPath"))
 		}
-		param.Type.Import = code.NewImportWithFilePath(
+		tp.Import = code.NewImportWithFilePath(
 			"service",
 			fmt.Sprintf("%s/%s", s.Module, s.Package),
 			path.Join(currentPath, s.ServiceName),
 		)
 	}
-	return param
+	return tp
 }
 func (s Service) parseEndpoints(methods []source.InterfaceMethod) (eps []Endpoint, err error) {
 	for _, method := range methods {
@@ -129,28 +144,36 @@ func (s Service) parseEndpoints(methods []source.InterfaceMethod) (eps []Endpoin
 			return nil, err
 		}
 		for i, param := range method.Params() {
-			fixedParam := s.fixMethodImport(param)
-			ep.Params = append(ep.Params, fixedParam)
+			param.Type = s.fixMethodImport(param.Type)
+			ep.Params = append(ep.Params, param)
 			if i == 1 {
-				request, err := findStruct(fixedParam)
+				request, err := findStruct(param.Type)
 				if err != nil {
 					return nil, err
 				}
 				ep.Request = request
-				ep.RequestImport = fixedParam.Type.Import
+				for inx, field := range request.Fields {
+					field.Type = s.fixMethodImport(field.Type)
+					ep.Request.Fields[inx] = field
+				}
+				ep.RequestImport = param.Type.Import
 			}
 		}
 		resultsLength := len(method.Results())
 		for i, param := range method.Results() {
-			fixedParam := s.fixMethodImport(param)
-			ep.Results = append(ep.Results, fixedParam)
+			param.Type = s.fixMethodImport(param.Type)
+			ep.Results = append(ep.Results, param)
 			if resultsLength > 1 && i == 0 {
-				response, err := findStruct(fixedParam)
+				response, err := findStruct(param.Type)
 				if err != nil {
 					return nil, err
 				}
 				ep.Response = response
-				ep.ResponseImport = fixedParam.Type.Import
+				for inx, field := range response.Fields {
+					field.Type = s.fixMethodImport(field.Type)
+					ep.Response.Fields[inx] = field
+				}
+				ep.ResponseImport = param.Type.Import
 			}
 		}
 		ep.HTTPTransport = parseHTTPTransport(method)
@@ -247,14 +270,14 @@ func FindServiceInterface(src source.Source) *source.Interface {
 	}
 	return nil
 }
-func findStruct(param code.Parameter) (*code.Struct, error) {
+func findStruct(tp code.Type) (*code.Struct, error) {
 	notFoundErr := errors.New(
 		"could not find structure, make sure that you are using a structure as request/response parameters",
 	)
-	if param.Type.Import.FilePath == "" {
+	if tp.Import.FilePath == "" {
 		return nil, notFoundErr
 	}
-	fls, err := ioutil.ReadDir(param.Type.Import.FilePath)
+	fls, err := ioutil.ReadDir(tp.Import.FilePath)
 	if err != nil {
 		panic(err)
 	}
@@ -265,16 +288,23 @@ func findStruct(param code.Parameter) (*code.Struct, error) {
 		if file.IsDir() {
 			continue
 		}
-		data, err := ioutil.ReadFile(path.Join(param.Type.Import.FilePath, file.Name()))
-		if err != nil {
-			return nil, err
+		var fileSource *source.Source
+		filePath := path.Join(tp.Import.FilePath, file.Name())
+		if src, ok := fileSourceCache[filePath]; ok {
+			fileSource = src
+		} else {
+			data, err := ioutil.ReadFile(filePath)
+			if err != nil {
+				return nil, err
+			}
+			fileSource, err = source.New(string(data))
+			fileSourceCache[filePath] = fileSource
+			if err != nil {
+				return nil, err
+			}
 		}
-		dataFile, err := source.New(string(data))
-		if err != nil {
-			return nil, err
-		}
-		for _, structure := range dataFile.Structures() {
-			if structure.Name() == param.Type.Qualifier {
+		for _, structure := range fileSource.Structures() {
+			if structure.Name() == tp.Qualifier {
 				return structure.Code().(*code.Struct), nil
 			}
 		}

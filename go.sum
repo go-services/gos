@@ -46,8 +46,12 @@ github.com/go-services/annotation v0.1.2 h1:YLQRhlSsKpKJbwo/6ZkyMWMXkW9EOEDG82au
 github.com/go-services/annotation v0.1.2/go.mod h1:AngxiDCuMgD4FRn/FdgfZM3ibfq4Mj0VwlVtEpjh31Q=
 github.com/go-services/code v0.1.5 h1:+ZoJ1Teh2jQJGOdwgjsAOgwD17/5qD71BXbA3gwY6xs=
 github.com/go-services/code v0.1.5/go.mod h1:fUERVBZCZwxv6RZin15z8TiNJ3x/Fj3LXdgx5emqSCo=
+github.com/go-services/code v0.1.6-0.20200202213709-754ae62cd245 h1:JQTQFORz+vPCFKHEeGxgN5AfHecoBUiXgEMfi1TKKU0=
+github.com/go-services/code v0.1.6-0.20200202213709-754ae62cd245/go.mod h1:fUERVBZCZwxv6RZin15z8TiNJ3x/Fj3LXdgx5emqSCo=
 github.com/go-services/source v0.0.1-beta.1 h1:dmhjBTDrPzm5aHeXpyH51m6Jmb6UnWJrChasV9yJ8QI=
 github.com/go-services/source v0.0.1-beta.1/go.mod h1:AoFchw9s+zMHHLtAghslwTiw9itKxmRYGbqeR7oMw9c=
+github.com/go-services/source v0.0.1-beta.1.0.20200204181033-aa761d923ffe h1:hLDDsfMcLJseBHSyTojai+58zEZcsfje+7TnFI5w07k=
+github.com/go-services/source v0.0.1-beta.1.0.20200204181033-aa761d923ffe/go.mod h1:CxEei8+Sg/+q655O1PibqeySwpW+JgVwqKQL3a1Udc8=
 github.com/go-stack/stack v1.8.0/go.mod h1:v0f6uXyyMGvRgIKkXu+yp6POWl0qKG85gN/melR3HDY=
 github.com/gogo/protobuf v1.1.1/go.mod h1:r8qH/GZQm5c6nD/R0oafs1akxWv10x8SbQlK7atdtwQ=
 github.com/gogo/protobuf v1.2.1/go.mod h1:hp+jE20tsWTFYpLwKvXlhS1hjn+gTNwPg2I6zVXpSg4=

@@ -1,9 +1,6 @@
 package generator
 
 import (
-	"bytes"
-	"encoding/json"
-	"errors"
 	"gos/config"
 	"gos/fs"
 	"gos/template"
@@ -17,14 +14,9 @@ import (
 func NewService(name string) error {
 	appFs := fs.AppFs()
 
-	b, err := afero.Exists(appFs, "kit.json")
-
-	if err != nil {
+	if err := config.Exists(); err != nil {
 		return err
-	} else if !b {
-		return errors.New("not in a kit project, you need to be in a project to run this command")
 	}
-
 	// we should remove the '_' because of this guide https://blog.golang.org/package-names
 	folderName := strings.ReplaceAll(strutil.ToSnakeCase(name), "_", "")
 
@@ -45,19 +37,10 @@ func NewService(name string) error {
 	if err != nil {
 		return err
 	}
-	configData, err := fs.ReadFile(appFs, "kit.json")
-	if err != nil {
-		return errors.New("could not read kit.json")
-	}
-	var kitConfig config.KitConfig
-	err = json.NewDecoder(bytes.NewBufferString(configData)).Decode(&kitConfig)
+	gosConfig, err := config.Read()
 	if err != nil {
 		return err
 	}
-	kitConfig.Services = append(kitConfig.Services, name)
-	newData, err := json.MarshalIndent(kitConfig, "", "\t")
-	if err != nil {
-		return err
-	}
-	return fs.WriteFile(appFs, "kit.json", string(newData))
+	gosConfig.Services = append(gosConfig.Services, name)
+	return config.Write(gosConfig)
 }

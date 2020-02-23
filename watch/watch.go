@@ -1,11 +1,7 @@
 package watch
 
 import (
-	"bytes"
-	"encoding/json"
-	"errors"
 	"gos/config"
-	"gos/fs"
 	"log"
 	"os"
 	"path"
@@ -14,13 +10,11 @@ import (
 	"time"
 
 	"github.com/radovskyb/watcher"
-	"github.com/spf13/afero"
 )
 
 type Watcher struct {
 	port      int
-	rootFs    afero.Fs
-	kitConfig config.KitConfig
+	gosConfig *config.GosConfig
 	watcher   *watcher.Watcher
 	// when a file gets changed a message is sent to the update channel
 	update chan string
@@ -46,25 +40,19 @@ func (w *Watcher) Watch() {
 					if err != nil {
 						log.Fatalln(err)
 					}
-					for _, svc := range w.kitConfig.Services {
+					for _, svc := range w.gosConfig.Services {
 						if strings.HasPrefix(pth, svc) {
 							w.update <- svc
 						}
 					}
-					if pth == "kit.json" {
-						configData, err := fs.ReadFile(w.rootFs, "kit.json")
+					if pth == config.FileName {
+						gosConfig, err := config.Read()
 						if err != nil {
-							panic(errors.New("not in a kit project, you need to be in a kit project to run this command"))
+							continue
 						}
-						var kitConfig config.KitConfig
-						err = json.NewDecoder(bytes.NewBufferString(configData)).Decode(&kitConfig)
-						if err != nil {
-							panic(errors.New("kit config malformed"))
-						}
-						for _, svc := range w.kitConfig.Services {
-							if strings.HasPrefix(pth, svc) {
-								w.update <- svc
-							}
+						w.gosConfig = gosConfig
+						for _, svc := range w.gosConfig.Services {
+							w.update <- svc
 						}
 					}
 				}
@@ -75,15 +63,14 @@ func (w *Watcher) Watch() {
 			}
 		}
 	}()
-	// Watch this folder for changes.
-	if err := w.watcher.Add("kit.json"); err != nil {
+	if err := w.watcher.Add(config.FileName); err != nil {
 		log.Fatalln(err)
 	}
 
 	if err := w.watcher.Ignore(".git"); err != nil {
 		log.Fatalln(err)
 	}
-	for _, service := range w.kitConfig.Services {
+	for _, service := range w.gosConfig.Services {
 		if err := w.watcher.AddRecursive(service); err != nil {
 			log.Fatalln(err)
 		}
@@ -110,29 +97,21 @@ func (w *Watcher) Close() {
 	close(w.update)
 }
 
-func NewWatcher(port int, rootFs afero.Fs, kitConfig config.KitConfig) *Watcher {
+func NewWatcher(port int, gosConfig *config.GosConfig) *Watcher {
 	return &Watcher{
 		port:      port,
 		update:    make(chan string),
-		rootFs:    rootFs,
-		kitConfig: kitConfig,
+		gosConfig: gosConfig,
 		watcher:   watcher.New(),
 	}
 }
 func Run(port int) {
-	rootFs := fs.AppFs()
-	configData, err := fs.ReadFile(rootFs, "kit.json")
+	gosConfig, err := config.Read()
 	if err != nil {
-		panic(errors.New("not in a kit project, you need to be in a kit project to run this command"))
+		panic(err)
 	}
-	var kitConfig config.KitConfig
-	err = json.NewDecoder(bytes.NewBufferString(configData)).Decode(&kitConfig)
-	if err != nil {
-		panic(errors.New("kit config malformed"))
-	}
-
 	r := NewRunner()
-	w := NewWatcher(port, rootFs, kitConfig)
+	w := NewWatcher(port, gosConfig)
 	// wait for build and run the binary with given params
 	go r.Run()
 
