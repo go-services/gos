@@ -98,7 +98,11 @@ func (h HTTPTransport) Decoder(ep Endpoint) string {
 		if !isExported(field.Name) || field.Tags == nil {
 			continue
 		}
-		if url := getTag("gos_url", *field.Tags); url != "" {
+
+		gosUrl := getTag("gos_url", *field.Tags)
+		gosQuery := getTag("gos_query", *field.Tags)
+		gosBody := getTag("gos_body", *field.Tags)
+		if gosUrl != "" {
 			tp := field.Type.String()
 			if !isUrlTypeSupported(tp) {
 				continue
@@ -106,12 +110,12 @@ func (h HTTPTransport) Decoder(ep Endpoint) string {
 			if tp == "string" {
 				vars = append(
 					vars,
-					jen.Id("request").Dot(field.Name).Op("=").Id("vars").Index(jen.Lit(url)).Line(),
+					jen.Id("request").Dot(field.Name).Op("=").Id("vars").Index(jen.Lit(gosUrl)).Line(),
 				)
 			} else {
-				vars = append(vars, convertFunc(field.Name, url, tp, false))
+				vars = append(vars, convertFunc(field.Name, gosUrl, tp, false))
 			}
-		} else if q := getTag("gos_query", *field.Tags); q != "" {
+		} else if gosQuery != "" {
 			tp := field.Type.String()
 			if !isQueryTypeSupported(tp) {
 				continue
@@ -121,12 +125,12 @@ func (h HTTPTransport) Decoder(ep Endpoint) string {
 					queries,
 					jen.Id("request").Dot(field.Name).Op("=").Id(
 						"r.URL.Query().Get",
-					).Call(jen.Lit(q)).Line(),
+					).Call(jen.Lit(gosQuery)).Line(),
 				)
 			} else {
-				queries = append(queries, convertFunc(field.Name, q, tp, true))
+				queries = append(queries, convertFunc(field.Name, gosQuery, tp, true))
 			}
-		} else if format := getTag("gos_body", *field.Tags); format != "" {
+		} else if gosBody == "json" {
 			parameterId := jen.Id("&request").Dot(field.Name)
 			if field.Type.Pointer {
 				parameterId = jen.Id("request").Dot(field.Name)
@@ -135,6 +139,8 @@ func (h HTTPTransport) Decoder(ep Endpoint) string {
 			body.Call(
 				jen.Id("r.Body"),
 			).Dot("Decode").Call(parameterId).Line()
+		} else if gosBody != "" && gosBody != "json" {
+			panic("currently the only supported format is `json`")
 		}
 	}
 	stmt := jen.Empty()

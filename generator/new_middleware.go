@@ -39,6 +39,9 @@ func NewMiddleware(name string, svc string, endpoint string) error {
 			template.ToLowerFirst(strutil.ToCamelCase(endpoint)),
 		)
 		b, err := afero.Exists(appFs, middlewareFilePath)
+		if err != nil {
+			return err
+		}
 		var fileData string
 		if !b {
 			fileData = createEndpointMiddlewareFile(gosConfig.Module, svc)

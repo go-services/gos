@@ -5,7 +5,10 @@ import (
 )
 
 var newCmd = &cobra.Command{
-	Use:   "new",
+	Use: "new",
+	Aliases: []string{
+		"n",
+	},
 	Short: "Various helper commands to generate new code",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return cmd.Help()

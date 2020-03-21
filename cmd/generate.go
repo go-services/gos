@@ -18,6 +18,9 @@ var generateCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		port, err := cmd.Flags().GetInt("port")
+		if err != nil {
+			return err
+		}
 		httpAddress := fmt.Sprintf(":%d", port)
 
 		gosConfig, err := config.Read()

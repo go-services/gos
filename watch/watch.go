@@ -20,6 +20,47 @@ type Watcher struct {
 	update chan string
 }
 
+func (w *Watcher) handleUpdate(event watcher.Event) {
+	currentPath, err := os.Getwd()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	pth, err := filepath.Rel(currentPath, event.Path)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	for _, svc := range w.gosConfig.Services {
+		if strings.HasPrefix(pth, svc) {
+			w.update <- svc
+		}
+	}
+	if pth == config.FileName {
+		gosConfig, err := config.Read()
+		if err != nil {
+			return
+		}
+		w.gosConfig = gosConfig
+		for _, svc := range w.gosConfig.Services {
+			w.update <- svc
+		}
+	}
+}
+
+func (w *Watcher) watchLoop() {
+	for {
+		select {
+		case event := <-w.watcher.Event:
+			if !event.IsDir() {
+				w.handleUpdate(event)
+			}
+		case err := <-w.watcher.Error:
+			log.Fatalln(err)
+		case <-w.watcher.Closed:
+			return
+		}
+	}
+}
+
 func (w *Watcher) Watch() {
 	// SetMaxEvents to 1 to allow at most 1 event's to be received
 	// on the Event channel per watching cycle.
@@ -27,42 +68,9 @@ func (w *Watcher) Watch() {
 	w.watcher.SetMaxEvents(10)
 
 	runner := NewRunner()
-	go func() {
-		for {
-			select {
-			case event := <-w.watcher.Event:
-				if !event.IsDir() {
-					currentPath, err := os.Getwd()
-					if err != nil {
-						log.Fatalln(err)
-					}
-					pth, err := filepath.Rel(currentPath, event.Path)
-					if err != nil {
-						log.Fatalln(err)
-					}
-					for _, svc := range w.gosConfig.Services {
-						if strings.HasPrefix(pth, svc) {
-							w.update <- svc
-						}
-					}
-					if pth == config.FileName {
-						gosConfig, err := config.Read()
-						if err != nil {
-							continue
-						}
-						w.gosConfig = gosConfig
-						for _, svc := range w.gosConfig.Services {
-							w.update <- svc
-						}
-					}
-				}
-			case err := <-w.watcher.Error:
-				log.Fatalln(err)
-			case <-w.watcher.Closed:
-				return
-			}
-		}
-	}()
+
+	go w.watchLoop()
+
 	if err := w.watcher.Add(config.FileName); err != nil {
 		log.Fatalln(err)
 	}
