@@ -137,7 +137,7 @@ var FS *FileSystem
 func init() {
 	FS = &FileSystem{
 		files: map[string]File{
-			"/assets": File{
+			"/assets": {
 				data: []byte{},
 				fi: FileInfo{
 					name:    "assets",
@@ -145,7 +145,7 @@ func init() {
 					modTime: time.Unix(0, 1566160076000000000),
 					isDir:   true,
 				},
-			}, "/assets/project": File{
+			}, "/assets/project": {
 				data: []byte{},
 				fi: FileInfo{
 					name:    "project",
@@ -153,7 +153,7 @@ func init() {
 					modTime: time.Unix(0, 1566160076000000000),
 					isDir:   true,
 				},
-			}, "/assets/project/gitignore": File{
+			}, "/assets/project/gitignore": {
 				data: []byte{
 					0x23, 0x20, 0x43, 0x72, 0x65, 0x61, 0x74, 0x65, 0x64, 0x20, 0x62, 0x79,
 					0x20, 0x2e, 0x69, 0x67, 0x6e, 0x6f, 0x72, 0x65, 0x20, 0x73, 0x75, 0x70,
@@ -193,7 +193,7 @@ func init() {
 					modTime: time.Unix(0, 1566160076000000000),
 					isDir:   false,
 				},
-			}, "/assets/service": File{
+			}, "/assets/service": {
 				data: []byte{},
 				fi: FileInfo{
 					name:    "service",
@@ -201,7 +201,7 @@ func init() {
 					modTime: time.Unix(0, 1566160076000000000),
 					isDir:   true,
 				},
-			}, "/assets/service/endpoint": File{
+			}, "/assets/service/endpoint": {
 				data: []byte{},
 				fi: FileInfo{
 					name:    "endpoint",
@@ -209,7 +209,7 @@ func init() {
 					modTime: time.Unix(0, 1566160076000000000),
 					isDir:   true,
 				},
-			}, "/assets/service/endpoint/middleware": File{
+			}, "/assets/service/endpoint/middleware": {
 				data: []byte{},
 				fi: FileInfo{
 					name:    "middleware",
@@ -217,7 +217,7 @@ func init() {
 					modTime: time.Unix(0, 1579868455161242973),
 					isDir:   true,
 				},
-			}, "/assets/service/endpoint/middleware/endpoint.go.gotmpl": File{
+			}, "/assets/service/endpoint/middleware/endpoint.go.gotmpl": {
 				data: []byte{
 					0x2f, 0x2f, 0x20, 0x4c, 0x6f, 0x67, 0x67, 0x69, 0x6e, 0x67, 0x4d, 0x69,
 					0x64, 0x64, 0x6c, 0x65, 0x77, 0x61, 0x72, 0x65, 0x20, 0x72, 0x65, 0x74,
@@ -268,7 +268,7 @@ func init() {
 					modTime: time.Unix(0, 1579868455161146794),
 					isDir:   false,
 				},
-			}, "/assets/templates": File{
+			}, "/assets/templates": {
 				data: []byte{},
 				fi: FileInfo{
 					name:    "templates",
@@ -276,7 +276,7 @@ func init() {
 					modTime: time.Unix(0, 1573155751000000000),
 					isDir:   true,
 				},
-			}, "/assets/templates/partials": File{
+			}, "/assets/templates/partials": {
 				data: []byte{},
 				fi: FileInfo{
 					name:    "partials",
@@ -284,7 +284,7 @@ func init() {
 					modTime: time.Unix(0, 1579972950286282286),
 					isDir:   true,
 				},
-			}, "/assets/templates/partials/endpoint_middleware.go.gotmpl": File{
+			}, "/assets/templates/partials/endpoint_middleware.go.gotmpl": {
 				data: []byte{
 					0x0a, 0x66, 0x75, 0x6e, 0x63, 0x20, 0x7b, 0x7b, 0x2e, 0x4e, 0x61, 0x6d,
 					0x65, 0x7d, 0x7d, 0x28, 0x6e, 0x65, 0x78, 0x74, 0x20, 0x64, 0x65, 0x66,
@@ -320,7 +320,7 @@ func init() {
 					modTime: time.Unix(0, 1573155982000000000),
 					isDir:   false,
 				},
-			}, "/assets/templates/partials/service_middleware.go.gotmpl": File{
+			}, "/assets/templates/partials/service_middleware.go.gotmpl": {
 				data: []byte{
 					0x70, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x20, 0x6d, 0x69, 0x64, 0x64,
 					0x6c, 0x65, 0x77, 0x61, 0x72, 0x65, 0x0a, 0x7b, 0x7b, 0x24, 0x6d, 0x64,
@@ -416,7 +416,7 @@ func init() {
 					modTime: time.Unix(0, 1579972950286167812),
 					isDir:   false,
 				},
-			}, "/assets/templates/project": File{
+			}, "/assets/templates/project": {
 				data: []byte{},
 				fi: FileInfo{
 					name:    "project",
@@ -424,7 +424,7 @@ func init() {
 					modTime: time.Unix(0, 1580647651390768207),
 					isDir:   true,
 				},
-			}, "/assets/templates/project/go.mod.gotmpl": File{
+			}, "/assets/templates/project/go.mod.gotmpl": {
 				data: []byte{
 					0x6d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x20, 0x7b, 0x7b, 0x20, 0x2e, 0x50,
 					0x72, 0x6f, 0x6a, 0x65, 0x63, 0x74, 0x4d, 0x6f, 0x64, 0x75, 0x6c, 0x65,
@@ -453,7 +453,7 @@ func init() {
 					modTime: time.Unix(0, 1571427742000000000),
 					isDir:   false,
 				},
-			}, "/assets/templates/project/gos.json.gotmpl": File{
+			}, "/assets/templates/project/gos.json.gotmpl": {
 				data: []byte{
 					0x7b, 0x0a, 0x20, 0x20, 0x22, 0x6d, 0x6f, 0x64, 0x75, 0x6c, 0x65, 0x22,
 					0x3a, 0x20, 0x22, 0x7b, 0x7b, 0x20, 0x2e, 0x50, 0x72, 0x6f, 0x6a, 0x65,
@@ -466,7 +466,7 @@ func init() {
 					modTime: time.Unix(0, 1566160076000000000),
 					isDir:   false,
 				},
-			}, "/assets/templates/service": File{
+			}, "/assets/templates/service": {
 				data: []byte{},
 				fi: FileInfo{
 					name:    "service",
@@ -474,7 +474,7 @@ func init() {
 					modTime: time.Unix(0, 1579452406223267287),
 					isDir:   true,
 				},
-			}, "/assets/templates/service/cmd": File{
+			}, "/assets/templates/service/cmd": {
 				data: []byte{},
 				fi: FileInfo{
 					name:    "cmd",
@@ -482,7 +482,7 @@ func init() {
 					modTime: time.Unix(0, 1571427699000000000),
 					isDir:   true,
 				},
-			}, "/assets/templates/service/cmd/main.go.gotmpl": File{
+			}, "/assets/templates/service/cmd/main.go.gotmpl": {
 				data: []byte{
 					0x70, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x20, 0x6d, 0x61, 0x69, 0x6e,
 					0x0a, 0x0a, 0x69, 0x6d, 0x70, 0x6f, 0x72, 0x74, 0x20, 0x28, 0x0a, 0x09,
@@ -533,7 +533,7 @@ func init() {
 					modTime: time.Unix(0, 1571427699000000000),
 					isDir:   false,
 				},
-			}, "/assets/templates/service/gen": File{
+			}, "/assets/templates/service/gen": {
 				data: []byte{},
 				fi: FileInfo{
 					name:    "gen",
@@ -541,7 +541,7 @@ func init() {
 					modTime: time.Unix(0, 1579972950280247844),
 					isDir:   true,
 				},
-			}, "/assets/templates/service/gen/cmd": File{
+			}, "/assets/templates/service/gen/cmd": {
 				data: []byte{},
 				fi: FileInfo{
 					name:    "cmd",
@@ -549,7 +549,7 @@ func init() {
 					modTime: time.Unix(0, 1579452406227500453),
 					isDir:   true,
 				},
-			}, "/assets/templates/service/gen/cmd/cmd.go.gotmpl": File{
+			}, "/assets/templates/service/gen/cmd/cmd.go.gotmpl": {
 				data: []byte{
 					0x2f, 0x2f, 0x20, 0x43, 0x6f, 0x64, 0x65, 0x20, 0x67, 0x65, 0x6e, 0x65,
 					0x72, 0x61, 0x74, 0x65, 0x64, 0x20, 0x62, 0x79, 0x20, 0x67, 0x6f, 0x73,
@@ -707,7 +707,7 @@ func init() {
 					modTime: time.Unix(0, 1579452406227413250),
 					isDir:   false,
 				},
-			}, "/assets/templates/service/gen/endpoint": File{
+			}, "/assets/templates/service/gen/endpoint": {
 				data: []byte{},
 				fi: FileInfo{
 					name:    "endpoint",
@@ -715,7 +715,7 @@ func init() {
 					modTime: time.Unix(0, 1579972128216219630),
 					isDir:   true,
 				},
-			}, "/assets/templates/service/gen/endpoint/definitions": File{
+			}, "/assets/templates/service/gen/endpoint/definitions": {
 				data: []byte{},
 				fi: FileInfo{
 					name:    "definitions",
@@ -723,7 +723,7 @@ func init() {
 					modTime: time.Unix(0, 1579452406205332911),
 					isDir:   true,
 				},
-			}, "/assets/templates/service/gen/endpoint/definitions/method.go.gotmpl": File{
+			}, "/assets/templates/service/gen/endpoint/definitions/method.go.gotmpl": {
 				data: []byte{
 					0x2f, 0x2f, 0x20, 0x43, 0x6f, 0x64, 0x65, 0x20, 0x67, 0x65, 0x6e, 0x65,
 					0x72, 0x61, 0x74, 0x65, 0x64, 0x20, 0x62, 0x79, 0x20, 0x67, 0x6f, 0x73,
@@ -769,7 +769,7 @@ func init() {
 					modTime: time.Unix(0, 1579452406205179511),
 					isDir:   false,
 				},
-			}, "/assets/templates/service/gen/endpoint/endpoint.go.gotmpl": File{
+			}, "/assets/templates/service/gen/endpoint/endpoint.go.gotmpl": {
 				data: []byte{
 					0x2f, 0x2f, 0x20, 0x43, 0x6f, 0x64, 0x65, 0x20, 0x67, 0x65, 0x6e, 0x65,
 					0x72, 0x61, 0x74, 0x65, 0x64, 0x20, 0x62, 0x79, 0x20, 0x67, 0x6f, 0x73,
@@ -838,7 +838,7 @@ func init() {
 					modTime: time.Unix(0, 1579452406230547569),
 					isDir:   false,
 				},
-			}, "/assets/templates/service/gen/endpoint/method.go.gotmpl": File{
+			}, "/assets/templates/service/gen/endpoint/method.go.gotmpl": {
 				data: []byte{
 					0x2f, 0x2f, 0x20, 0x43, 0x6f, 0x64, 0x65, 0x20, 0x67, 0x65, 0x6e, 0x65,
 					0x72, 0x61, 0x74, 0x65, 0x64, 0x20, 0x62, 0x79, 0x20, 0x67, 0x6f, 0x73,
@@ -1073,7 +1073,7 @@ func init() {
 					modTime: time.Unix(0, 1579972128215940601),
 					isDir:   false,
 				},
-			}, "/assets/templates/service/gen/errors": File{
+			}, "/assets/templates/service/gen/errors": {
 				data: []byte{},
 				fi: FileInfo{
 					name:    "errors",
@@ -1081,7 +1081,7 @@ func init() {
 					modTime: time.Unix(0, 1579452586039354750),
 					isDir:   true,
 				},
-			}, "/assets/templates/service/gen/errors/errors.go.gotmpl": File{
+			}, "/assets/templates/service/gen/errors/errors.go.gotmpl": {
 				data: []byte{
 					0x2f, 0x2f, 0x20, 0x43, 0x6f, 0x64, 0x65, 0x20, 0x67, 0x65, 0x6e, 0x65,
 					0x72, 0x61, 0x74, 0x65, 0x64, 0x20, 0x62, 0x79, 0x20, 0x67, 0x6f, 0x73,
@@ -1141,7 +1141,7 @@ func init() {
 					modTime: time.Unix(0, 1579452586036591219),
 					isDir:   false,
 				},
-			}, "/assets/templates/service/gen/errors/http.go.gotmpl": File{
+			}, "/assets/templates/service/gen/errors/http.go.gotmpl": {
 				data: []byte{
 					0x2f, 0x2f, 0x20, 0x43, 0x6f, 0x64, 0x65, 0x20, 0x67, 0x65, 0x6e, 0x65,
 					0x72, 0x61, 0x74, 0x65, 0x64, 0x20, 0x62, 0x79, 0x20, 0x67, 0x6f, 0x73,
@@ -1253,7 +1253,7 @@ func init() {
 					modTime: time.Unix(0, 1579452586039262228),
 					isDir:   false,
 				},
-			}, "/assets/templates/service/gen/service": File{
+			}, "/assets/templates/service/gen/service": {
 				data: []byte{},
 				fi: FileInfo{
 					name:    "service",
@@ -1261,7 +1261,7 @@ func init() {
 					modTime: time.Unix(0, 1579972950283173621),
 					isDir:   true,
 				},
-			}, "/assets/templates/service/gen/service.go.gotmpl": File{
+			}, "/assets/templates/service/gen/service.go.gotmpl": {
 				data: []byte{
 					0x2f, 0x2f, 0x20, 0x43, 0x6f, 0x64, 0x65, 0x20, 0x67, 0x65, 0x6e, 0x65,
 					0x72, 0x61, 0x74, 0x65, 0x64, 0x20, 0x62, 0x79, 0x20, 0x67, 0x6f, 0x73,
@@ -1395,7 +1395,7 @@ func init() {
 					modTime: time.Unix(0, 1579972950280127901),
 					isDir:   false,
 				},
-			}, "/assets/templates/service/gen/service/service.go.gotmpl": File{
+			}, "/assets/templates/service/gen/service/service.go.gotmpl": {
 				data: []byte{
 					0x70, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x20, 0x73, 0x65, 0x72, 0x76,
 					0x69, 0x63, 0x65, 0x0a, 0x0a, 0x69, 0x6d, 0x70, 0x6f, 0x72, 0x74, 0x20,
@@ -1416,7 +1416,7 @@ func init() {
 					modTime: time.Unix(0, 1579972950283026276),
 					isDir:   false,
 				},
-			}, "/assets/templates/service/gen/transport": File{
+			}, "/assets/templates/service/gen/transport": {
 				data: []byte{},
 				fi: FileInfo{
 					name:    "transport",
@@ -1424,7 +1424,7 @@ func init() {
 					modTime: time.Unix(0, 1579452406208429155),
 					isDir:   true,
 				},
-			}, "/assets/templates/service/gen/transport/http": File{
+			}, "/assets/templates/service/gen/transport/http": {
 				data: []byte{},
 				fi: FileInfo{
 					name:    "http",
@@ -1432,7 +1432,7 @@ func init() {
 					modTime: time.Unix(0, 1580653640756538744),
 					isDir:   true,
 				},
-			}, "/assets/templates/service/gen/transport/http/http.go.gotmpl": File{
+			}, "/assets/templates/service/gen/transport/http/http.go.gotmpl": {
 				data: []byte{
 					0x2f, 0x2f, 0x20, 0x43, 0x6f, 0x64, 0x65, 0x20, 0x67, 0x65, 0x6e, 0x65,
 					0x72, 0x61, 0x74, 0x65, 0x64, 0x20, 0x62, 0x79, 0x20, 0x67, 0x6f, 0x73,
@@ -1678,7 +1678,7 @@ func init() {
 					modTime: time.Unix(0, 1579452406212927713),
 					isDir:   false,
 				},
-			}, "/assets/templates/service/gen/transport/http/method.go.gotmpl": File{
+			}, "/assets/templates/service/gen/transport/http/method.go.gotmpl": {
 				data: []byte{
 					0x2f, 0x2f, 0x20, 0x43, 0x6f, 0x64, 0x65, 0x20, 0x67, 0x65, 0x6e, 0x65,
 					0x72, 0x61, 0x74, 0x65, 0x64, 0x20, 0x62, 0x79, 0x20, 0x67, 0x6f, 0x73,
@@ -2004,7 +2004,7 @@ func init() {
 					modTime: time.Unix(0, 1580653640756427822),
 					isDir:   false,
 				},
-			}, "/assets/templates/service/gen/transport/transport.go.gotmpl": File{
+			}, "/assets/templates/service/gen/transport/transport.go.gotmpl": {
 				data: []byte{
 					0x2f, 0x2f, 0x20, 0x43, 0x6f, 0x64, 0x65, 0x20, 0x67, 0x65, 0x6e, 0x65,
 					0x72, 0x61, 0x74, 0x65, 0x64, 0x20, 0x62, 0x79, 0x20, 0x67, 0x6f, 0x73,
@@ -2026,7 +2026,7 @@ func init() {
 					modTime: time.Unix(0, 1579452406208305954),
 					isDir:   false,
 				},
-			}, "/assets/templates/service/gen/utils": File{
+			}, "/assets/templates/service/gen/utils": {
 				data: []byte{},
 				fi: FileInfo{
 					name:    "utils",
@@ -2034,7 +2034,7 @@ func init() {
 					modTime: time.Unix(0, 1571424895000000000),
 					isDir:   true,
 				},
-			}, "/assets/templates/service/gen/utils/utils.go.gotmpl": File{
+			}, "/assets/templates/service/gen/utils/utils.go.gotmpl": {
 				data: []byte{
 					0x70, 0x61, 0x63, 0x6b, 0x61, 0x67, 0x65, 0x20, 0x75, 0x74, 0x69, 0x6c,
 					0x73, 0x0a, 0x0a, 0x69, 0x6d, 0x70, 0x6f, 0x72, 0x74, 0x20, 0x28, 0x0a,
@@ -2203,7 +2203,7 @@ func init() {
 					modTime: time.Unix(0, 1571424895000000000),
 					isDir:   false,
 				},
-			}, "/assets/templates/service/service.go.gotmpl": File{
+			}, "/assets/templates/service/service.go.gotmpl": {
 				data: []byte{
 					0x2f, 0x2f, 0x20, 0x43, 0x6f, 0x64, 0x65, 0x20, 0x67, 0x65, 0x6e, 0x65,
 					0x72, 0x61, 0x74, 0x65, 0x64, 0x20, 0x62, 0x79, 0x20, 0x67, 0x6f, 0x73,
